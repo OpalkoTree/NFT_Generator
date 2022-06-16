@@ -1,51 +1,50 @@
+import os
 import random
 import json
 from PIL import Image
 from math import prod
-
-
-MEDIA_URL = './media/'
+from backend.settings import MEDIA_ROOT
 
 class Generator():
 
-    def generate(meta:dict, traits:list, quantity:int) -> dict:
-        attributes_count = [len(value) for value in traits.values()]
-        weighted_layers = []
-        attributes_list = []
-        completed_list = []
+    @staticmethod
+    def generate_tokens(combinations: list) -> dict:
+        for loop, combination in enumerate(combinations):
+            output = Image.new(
+                'RGBA',
+                Image.open(os.path.join(MEDIA_ROOT, list(combination.values())[0])).size
+            )
 
-        for _ in range(quantity):
-            attributes_dict = {}
-            completed = []
+            for layer, attribute in combination.items():
+                attribute = Image.open(os.path.join(MEDIA_ROOT, attribute)).convert('RGBA')
+                output.paste(attribute, (0,0), attribute)
+
+            output.save(f'{loop}.png', 'PNG')
+
+        return {'success': True, 'message': f'Generations completed'}
+
+    @classmethod
+    def generate_combinations(cls, traits:list, quantity:int) -> dict:
+        attributes_count = [len(value) for value in traits.values()]
+        completed_combinations = []
+
+        if quantity > prod(attributes_count):
+            return {'success': False, 'message': f'Expected number of generations, less than possible'}
+        
+        while True:
+            combination = {}
 
             for layer, attributes in traits.items():
-                completed = {}
-
                 image_list, chance_list = zip(*[(k,v) for attribute in attributes for k,v in attribute.items()])
-                image = random.choices(image_list, chance_list)[0]
-                weighted_layers.append(Image.open(MEDIA_URL + image).convert('RGBA'))
-                completed[layer] = image
-                completed_list.append(completed)
-
-            if quantity > prod(attributes_count):
-                return {'success': False, 'message': f'Expected number of generations, less than possible'}
+                image = random.choices(image_list, chance_list)
+                combination[layer] = image[0]
+                
+            if combination not in completed_combinations:
+                completed_combinations.append(combination)
             
-            if completed not in attributes_list:
-                output = weighted_layers[0]
+            if len(completed_combinations) == quantity:
+                break
 
-                for trait in range(1, weighted_layers.__len__()):
-                    output.paste(weighted_layers[trait], (0,0), weighted_layers[trait])
+        return cls.generate_tokens(completed_combinations)
 
-                output.save(f'{len(attributes_list)}.png', 'PNG')
-                attributes_dict['attributes'] = completed_list
-
-                meta['attributes'] = completed_list
-                json.dump(meta, open(f'{len(attributes_list)}.json', 'w'), indent = 4)
-            
-            attributes_list.append(attributes_dict)
-
-        return {'success': True, 'message': f'Successfully generated {quantity} NFTs'}
-
-'''
-завести ассинхроноость и многопоточность
-'''
+# TODO: завести ассинхроноость и многопоточность

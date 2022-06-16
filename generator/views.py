@@ -11,17 +11,21 @@ from .generator import Generator
 @api_view(['POST'])
 @permission_classes((AllowAny,))
 def generate_nft(request):
+    import time
+    start = time.time()
+
     collection = Collection.objects.get(id=request.data['id'])
     layers = Layer.objects.filter(collection=collection.id)
     layers_list = {layer.layer_name:[{i.image.name:i.chance} for i in layer.attributes.all()] for layer in layers}
 
-    generation = Generator.generate(
-        CollectionSerializer(collection).data, 
-        layers_list,
-        collection.image_count
-    )
+    # CollectionSerializer(collection).data,
+    # collection.image_count
 
-    return JsonResponse(generation, status=200)
+    generation = Generator.generate_combinations(layers_list, 2)
+
+    print(round((time.time() - start), 3))
+
+    return JsonResponse(generation, status=200, safe=False)
 
 
 class CollectionViewSet(viewsets.ModelViewSet):
