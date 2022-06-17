@@ -1,3 +1,5 @@
+import asyncio
+from asgiref.sync import sync_to_async
 from django.http import JsonResponse
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -68,9 +70,9 @@ class AttributeViewSet(viewsets.ModelViewSet):
     def create(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        total_dict = serializer.save()
 
-        return JsonResponse({'success': True, 'data': serializer.data}, status=200)
+        return JsonResponse({'success': True, 'data': total_dict}, status=200)
 
     def destroy(self, **kwargs):
         attribute = self.get_object()

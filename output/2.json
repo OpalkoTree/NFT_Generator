@@ -1,0 +1,30 @@
+{
+    "name": "Miloky#1#2",
+    "image_count": "2/1/10",
+    "collection_name": "Miloky",
+    "description": "Here is a description of the features of the collections.",
+    "blockchain": "ETH",
+    "image_url": "2.jpg",
+    "attributes": [
+        {
+            "trait_type": "Legs",
+            "value": "\u043d\u043e\u0433\u0438_\u043a\u0435\u0434\u044b.png"
+        },
+        {
+            "trait_type": "Body",
+            "value": "\u0442\u0435\u043b\u043e_\u043f\u043e\u0434\u0442\u0435\u043a\u0438_3q8HCnX.png"
+        },
+        {
+            "trait_type": "Hands",
+            "value": "\u0440\u0443\u043a\u0438_\u043a\u043e\u0441\u044f\u043a.png"
+        },
+        {
+            "trait_type": "Face",
+            "value": "\u043b\u0438\u0446\u043e_\u0437\u043b\u043e\u0438.png"
+        },
+        {
+            "trait_type": "Headwear",
+            "value": "\u043a\u043e\u0440\u043e\u043d\u0430.png"
+        }
+    ]
+}

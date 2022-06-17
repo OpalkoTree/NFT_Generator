@@ -15,7 +15,7 @@ class Collection(models.Model):
     collection_name = models.CharField(max_length=128)
     collection_family = models.CharField(max_length=128)
     description = models.TextField(max_length=500)
-    name_format = models.CharField(max_length=128)
+    name = models.CharField(max_length=128)
     image_count = models.IntegerField(
         default=1, validators=[
             MinValueValidator(1), MaxValueValidator(10)
@@ -36,9 +36,9 @@ class Collection(models.Model):
 
 class Attribute(models.Model):
     image = models.FileField()
-    chance = models.IntegerField(
-        default=0, validators=[
-            MinValueValidator(0), MaxValueValidator(100)
+    chance = models.FloatField(
+        default=0.1, validators=[
+            MinValueValidator(0.1), MaxValueValidator(100.0)
         ]
     )
 
