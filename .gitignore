@@ -2,10 +2,12 @@
 /.idea/
 __pycache__/
 migrations/
-/media/
+media/
+output/*
 /.vs/
 
 *.sqlite3
 *.jpg
 *.png
 *.jpeg
+*.json
