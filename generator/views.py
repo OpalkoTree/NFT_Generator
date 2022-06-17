@@ -14,14 +14,13 @@ def generate_nft(request):
     import time
     start = time.time()
 
-    collection = Collection.objects.get(id=request.data['id'])
-    layers = Layer.objects.filter(collection=collection.id)
+    if not request.data.get('id'):
+        return JsonResponse({'success': False, 'message': 'id required'}, status=200, safe=False)
+
+    layers = Layer.objects.filter(collection__id=request.data['id'])
     layers_list = {layer.layer_name:[{i.image.name:i.chance} for i in layer.attributes.all()] for layer in layers}
 
-    # CollectionSerializer(collection).data,
-    # collection.image_count
-
-    generation = Generator.generate_combinations(layers_list, 2)
+    generation = Generator.generate_combinations(layers_list, request.data['id'])
 
     print(round((time.time() - start), 3))
 
