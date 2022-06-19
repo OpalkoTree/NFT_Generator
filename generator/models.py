@@ -18,7 +18,7 @@ class Collection(models.Model):
     name = models.CharField(max_length=128)
     image_count = models.IntegerField(
         default=1, validators=[
-            MinValueValidator(1), MaxValueValidator(10)
+            MinValueValidator(1), MaxValueValidator(100)
         ]
         )
     royalty = models.FloatField(

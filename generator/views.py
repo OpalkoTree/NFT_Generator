@@ -1,5 +1,3 @@
-import asyncio
-from asgiref.sync import sync_to_async
 from django.http import JsonResponse
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, AllowAny
