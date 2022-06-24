@@ -15,7 +15,7 @@ def generate_nft(request):
     start = time.time()
 
     if not request.data.get('id'):
-        return JsonResponse({'success': False, 'message': 'id required'}, status=200, safe=False)
+        return JsonResponse({ 'success': False, 'message': 'id required' }, status=200, safe=False)
 
     layers = Layer.objects.filter(collection__id=request.data['id'])
     layers_list = {layer.layer_name:[{i.image.name:i.chance} for i in layer.attributes.all()] for layer in layers}
@@ -36,14 +36,14 @@ class CollectionViewSet(viewsets.ModelViewSet):
         collections_query = self.queryset.filter(creator=request.user)
         serializer = self.serializer_class(collections_query, many=True)
 
-        return JsonResponse({'success': True, 'data': serializer.data}, status=200)
+        return JsonResponse({ 'success': True, 'data': serializer.data }, status=200)
 
     def create(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return JsonResponse({'success': True, 'data': serializer.data}, status=200)
+        return JsonResponse({ 'success': True, 'data': serializer.data }, status=200)
 
     def update(self, request, **kwargs):
         collection = self.get_object()
@@ -51,13 +51,13 @@ class CollectionViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return JsonResponse({'success': True, 'data': serializer.data}, status=200)
+        return JsonResponse({ 'success': True, 'data': serializer.data }, status=200)
 
     def destroy(self, **kwargs):
         collection = self.get_object()
         collection.delete()
 
-        return JsonResponse({'success': True, 'message': 'Has been deleted'}, status=200)
+        return JsonResponse({ 'success': True, 'message': 'Has been deleted' }, status=200)
 
 
 class AttributeViewSet(viewsets.ModelViewSet):
@@ -70,13 +70,13 @@ class AttributeViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         total_dict = serializer.save()
 
-        return JsonResponse({'success': True, 'data': total_dict}, status=200)
+        return JsonResponse({ 'success': True, 'data': total_dict }, status=200)
 
     def destroy(self, **kwargs):
         attribute = self.get_object()
         attribute.delete()
 
-        return JsonResponse({'success': True, 'message': 'Has been deleted'}, status=200)
+        return JsonResponse({ 'success': True, 'message': 'Has been deleted' }, status=200)
 
 
 class LayerViewSet(viewsets.ModelViewSet):
@@ -88,14 +88,14 @@ class LayerViewSet(viewsets.ModelViewSet):
         layer_query = self.queryset.filter(collection=request.data['collection'])
         serializer = self.serializer_class(layer_query, many=True)
 
-        return JsonResponse({'success': True, 'data': serializer.data}, status=200)
+        return JsonResponse({ 'success': True, 'data': serializer.data }, status=200)
 
     def create(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return JsonResponse({'success': True, 'data': serializer.data}, status=200)
+        return JsonResponse({ 'success': True, 'data': serializer.data }, status=200)
 
     def update(self, request, **kwargs):
         layer = self.get_object()
@@ -103,10 +103,10 @@ class LayerViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return JsonResponse({'success': True, 'data': serializer.data}, status=200)
+        return JsonResponse({ 'success': True, 'data': serializer.data }, status=200)
 
     def destroy(self, **kwargs):
         layer = self.get_object()
         layer.delete()
 
-        return JsonResponse({'success': True, 'message': 'Has been deleted'}, status=200)
+        return JsonResponse({ 'success': True, 'message': 'Has been deleted' }, status=200)
