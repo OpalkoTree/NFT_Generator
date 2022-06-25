@@ -19,8 +19,7 @@ def generate_nft(request):
 
     layers = Layer.objects.filter(collection__id=request.data['id'])
     layers_list = {layer.layer_name:[{i.image.name:i.chance} for i in layer.attributes.all()] for layer in layers}
-
-    generation = Generator.generate_combinations(layers_list, request.data['id'], request.data['api_key'])
+    generation = Generator.generate_combinations(layers_list, request.data.dict())
 
     print(round((time.time() - start), 3))
 

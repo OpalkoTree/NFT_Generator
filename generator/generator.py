@@ -1,10 +1,10 @@
-from io import BytesIO, StringIO
 import os
 import random
 import json
 import requests
 import asyncio
 import aiofiles
+from io import BytesIO
 from math import prod
 from typing import List
 from PIL import Image
@@ -26,11 +26,11 @@ class Generator():
             'pinataMetadata': json.dumps({ 'name': file_name })
             }
 
-        files = {'file': (file_name,  file.getvalue())}
+        files = [('file', (file_name, file.getvalue(), 'application/octet-stream'))]
 
         headers = {
-            'pinata_api_key': '29ce83468ee306946d91',
-            'pinata_secret_api_key': '86d7d4d266ac3e31db4f284c57dfd695f7a9326df50489acf8fc8d0cd0cb5a62'
+            'pinata_api_key': Generator.api_key,
+            'pinata_secret_api_key': Generator.secret_api_key
             }
 
         response = requests.request('POST', url, headers=headers, data=payload, files=files)
@@ -38,10 +38,10 @@ class Generator():
         return json.loads(response.text)
 
     @classmethod
-    def generate_meta(cls, iter: int, collection: dict, attributes: List[dict], cid: str) -> None:
+    def generate_meta(cls, iter: int, collection: dict, attributes: List[dict], cid: dict) -> None:
         collection |= {
             'name': f'{ collection["name"] }#{ iter }',
-            'image_url': f'https://gateway.pinata.cloud/ipfs/{ cid }',
+            'image_url': f'https://gateway.pinata.cloud/ipfs/{ cid["IpfsHash"] }',
             'image_count': f'{ iter }/{ collection["image_count"] }',
             'attributes': attributes
             }
@@ -57,7 +57,7 @@ class Generator():
         return first_layer
 
     @classmethod
-    def generate_token(cls, iter: int, combination: dict) -> List[dict]:
+    def generate_token(cls, iter: int, combination: dict) -> tuple:
         first_layer = Image.new(mode='RGBA', size=(1500,1500))
         tempFile = BytesIO()
         attributes = []
@@ -74,21 +74,22 @@ class Generator():
         return cid, attributes
         
     @classmethod
-    async def generate_tokens(cls, loop, combinations: List[dict], collection: dict, api_key: str) -> dict:
+    async def generate_tokens(cls, loop, combinations: List[dict], collection: dict) -> dict:
         with ThreadPoolExecutor(max_workers=os.cpu_count()*4) as executor:
             for iter, combination in enumerate(combinations, 1):
                 cid, attribute_list = await loop.run_in_executor(executor, cls.generate_token, iter, combination)
-                await loop.run_in_executor(executor, cls.generate_meta, iter, collection, attribute_list, cid['IpfsHash'])
+                await loop.run_in_executor(executor, cls.generate_meta, iter, collection, attribute_list, cid)
 
             return { 'success': True, 'message': 'Generation completed' }
 
     @classmethod
-    def generate_combinations(cls, traits: dict, id: int, api_key: str) -> dict:
-        collection = CollectionMetaSerializer(Collection.objects.get(pk=id)).data
-        attributes_count = [len(value) for value in traits.values()]
+    def generate_combinations(cls, traits: dict, kwargs: dict) -> dict:
+        cls.api_key, cls.secret_api_key = kwargs['api_key'], kwargs['secret_api_key']
+        collection = CollectionMetaSerializer(Collection.objects.get(pk=kwargs['id'])).data
+        attributes_count = prod([len(value) for value in traits.values()])
         completed_combinations = []
 
-        if collection['image_count'] > prod(attributes_count):
+        if collection['image_count'] > attributes_count:
             return { 'success': False, 'message': 'Expected number of generations, less than possible' }
 
         while True:
@@ -113,7 +114,7 @@ class Generator():
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(cls.generate_tokens(loop, completed_combinations, collection, api_key))
+        result = loop.run_until_complete(cls.generate_tokens(loop, completed_combinations, collection))
         loop.close()
 
         return result
