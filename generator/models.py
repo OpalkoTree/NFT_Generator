@@ -16,7 +16,7 @@ class Collection(models.Model):
     collection_family = models.CharField(max_length=128)
     description = models.TextField(max_length=500)
     name = models.CharField(max_length=128)
-    image_count = models.IntegerField(
+    series = models.IntegerField(
         default=1, validators=[
             MinValueValidator(1), MaxValueValidator(100)
         ]

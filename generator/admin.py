@@ -6,8 +6,8 @@ from .models import Blockchain, Collection, Attribute, Layer
 class CollectionAdmin(admin.ModelAdmin):
 
     model = Collection
-    list_display = ['collection_name', 'image_count', 'blockchain', 'is_generated']
-    list_filter = ['image_count', 'blockchain', 'is_generated']
+    list_display = ['collection_name', 'series', 'blockchain', 'is_generated']
+    list_filter = ['series', 'blockchain', 'is_generated']
     search_fields = ('creator', 'collection_name', 'collection_family', 'name')
 
 

@@ -24,7 +24,7 @@ class CollectionMetaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Collection
-        fields = ['name', 'image_count', 'collection_name', 'description', 'blockchain']
+        fields = ['name', 'series', 'collection_name', 'description', 'blockchain']
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)
