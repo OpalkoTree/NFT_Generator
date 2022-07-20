@@ -1,4 +1,7 @@
+import time
+
 from django.http import JsonResponse
+from django.db.models import QuerySet
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import api_view, permission_classes
@@ -8,22 +11,26 @@ from .serializers import CollectionSerializer, AttributeSerializer, LayerSeriali
 
 from .generator import Generator
 
+def traits_dict_generator(layers: QuerySet) -> dict:
+    return { layer.layer_name:[{item.image.name: item.chance} for item in layer.attributes.all()] for layer in layers }
+
+
 @api_view(['POST'])
 @permission_classes((AllowAny,))
 def generate_nft(request):
-    import time
     start = time.time()
 
     if not request.data.get('id'):
         return JsonResponse({ 'success': False, 'message': 'id required' }, status=200, safe=False)
 
-    layers = Layer.objects.filter(collection__id=request.data['id'])
-    layers_list = {layer.layer_name:[{i.image.name:i.chance} for i in layer.attributes.all()] for layer in layers}
-    generation = Generator.generate_combinations(layers_list, request.data.dict())
+    traits = traits_dict_generator(Layer.objects.filter(collection__id=request.data['id']))
+    generation_response = Generator.generate_combinations(traits, request.data.dict())
 
-    print(round((time.time() - start), 3))
+    generation_response |= {
+        'generation_time': round((time.time() - start), 3)
+    }
 
-    return JsonResponse(generation, status=200, safe=False)
+    return JsonResponse(generation_response, status=200, safe=False)
 
 
 class CollectionViewSet(viewsets.ModelViewSet):

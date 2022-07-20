@@ -1,42 +1,59 @@
 import os
 import random
 import json
+from urllib import response
 import requests
 import asyncio
-import aiofiles
+
 from io import BytesIO
 from math import prod, ceil
 from typing import List
-from PIL import Image
 from concurrent.futures import ThreadPoolExecutor
+
+from PIL import Image
 
 from backend.settings import MEDIA_ROOT
 from .models import Collection
 from .serializers import CollectionMetaSerializer
 from .dataclass import Token
 
-from sys import getsizeof
 
 class Generator():
 
     @staticmethod
-    def pinata_upload(pin_name: str, tokens: List[tuple]) -> dict:
+    def files_list_generator(tokens: List[tuple]) -> list:
+        files = []
+        for token in tokens:
+            if token.is_generated:
+                files.append(('file', (f'jsons/{ token.name.split("#")[1] }.json', token.to_json())))
+            else:
+                files.append(('file', (f'images/{ token.name.split("#")[1] }.jpg', token.image)))
+
+        return files
+
+    @classmethod
+    def pin_pinata(cls, pin_name: str, tokens: List[tuple]) -> dict:
         url = "https://api.pinata.cloud/pinning/pinFileToIPFS"
 
         payload = {
             'pinataOptions': json.dumps({ 'cidVersion': 1, 'wrapWithDirectory': True }),
             'pinataMetadata': json.dumps({ 'name': pin_name })
-            }
+        }
 
-        if not tokens[0].is_generated:
-            files = [('file', (f'images/{ token.name.split("#")[1] }.jpg', token.image)) for token in tokens]
-        else:
-            files = [('file', (f'jsons/{ token.name.split("#")[1] }.json', token.to_json())) for token in tokens]
+        # Попробуй if not is_generated in tokens
+        # print(True if not 'is_generated' in tokens else False)
+        # print([token.is_generated == False for token in tokens])
+        # if not tokens[0].is_generated:
+            # files = [('file', (f'images/{ token.name.split("#")[1] }.jpg', token.image)) for token in tokens]
+        # else:
+            # files = [('file', (f'jsons/{ token.name.split("#")[1] }.json', token.to_json())) for token in tokens]        
+
+        files = cls.files_list_generator(tokens)
 
         headers = {
             'pinata_api_key': Generator.api_key,
             'pinata_secret_api_key': Generator.secret_api_key
-            }
+        }
 
         response = requests.request('POST', url, headers=headers, data=payload, files=files)
 
@@ -49,7 +66,7 @@ class Generator():
 
     @classmethod
     def generate_token(cls, iter: int, combination: dict, collection: dict) -> tuple:
-        first_layer = Image.new(mode='RGBA', size=(1500,1500))
+        first_layer = Image.new(mode='RGBA', size=(1500, 1500))
         attributes = []
 
         for layer, attribute in list(combination.items()):
@@ -77,18 +94,18 @@ class Generator():
             for iter, combination in enumerate(combinations, 1):
                 tokens_array.append(await loop.run_in_executor(executor, cls.generate_token, iter, combination, collection))
 
-            img_cid = cls.pinata_upload(f'{collection["collection_name"]}_img', tokens_array)
+            img_cid = cls.pin_pinata(f'{ collection["collection_name"] }_img', tokens_array)
 
             [token.replace_image(img_cid) for token in tokens_array]
 
-            meta_cid = cls.pinata_upload(f'{collection["collection_name"]}_json', tokens_array)
+            meta_cid = cls.pin_pinata(f'{ collection["collection_name"] }_json', tokens_array)
 
         return { 'success': True, 'message': 'Generation completed', 'images': img_cid, 'meta': meta_cid }
 
     @classmethod
     def generate_combinations(cls, traits: dict, kwargs: dict) -> dict:
         cls.api_key, cls.secret_api_key = kwargs['api_key'], kwargs['secret_api_key']
-        collection = CollectionMetaSerializer(Collection.objects.get(pk=kwargs['id'])).data
+        collection = dict(CollectionMetaSerializer(Collection.objects.get(pk=kwargs['id'])).data)
         attributes_count = prod([len(value) for value in traits.values()])
         completed_combinations = []
 
@@ -99,15 +116,13 @@ class Generator():
             combination = {}
 
             for layer, attributes in traits.items():
-                ## if u need generation by chance
-                # image_list, chance_list = zip(*[(k,v) for attribute in attributes for k,v in attribute.items()])
-                # combination |= { layer: random.choices(image_list, chance_list)[0] }
+                if kwargs['mode'] == 'by_chance':
+                    image_list, chance_list = zip(*[(k,v) for attribute in attributes for k,v in attribute.items()])
+                    combination |= { layer: random.choices(image_list, chance_list)[0] }
 
-                ##  if u need generation in percentage terms
-                attributes = sum([[k]*ceil(v*collection['series']/100) for attr in attributes for k,v in attr.items()], [])
-
-                for attribute in random.sample(attributes, collection['series']):
-                    combination |= { layer: attribute }
+                if kwargs['mode'] == 'by_percentage':
+                    attributes = sum([[k]*ceil(v*collection['series']/100) for attr in attributes for k,v in attr.items()], [])
+                    combination |= { layer: attribute for attribute in random.sample(attributes, collection['series']) }
 
             if combination not in completed_combinations:
                 completed_combinations.append(combination)
@@ -117,7 +132,7 @@ class Generator():
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(cls.generate_tokens(loop, completed_combinations, dict(collection)))
+        result = loop.run_until_complete(cls.generate_tokens(loop, completed_combinations, collection))
         loop.close()
 
         return result
